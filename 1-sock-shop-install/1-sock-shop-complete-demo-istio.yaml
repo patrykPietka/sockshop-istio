@@ -1,14 +1,25 @@
-apiVersion: extensions/v1beta1
+apiVersion: v1
+kind: "Namespace"
+metadata:
+  name: sock-shop
+
+---
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
     name: carts-db
+    version: v1
   name: carts-db
   namespace: sock-shop
 spec:
   replicas: 1
   strategy: {}
+  selector:
+    matchLabels:
+      name: carts-db
+      version: v1
   template:
     metadata:
       annotations:
@@ -19,128 +30,128 @@ spec:
         version: v1
     spec:
       containers:
-      - image: mongo
-        name: carts-db
-        ports:
-        - containerPort: 27017
-          name: mongo
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - CHOWN
-            - SETGID
-            - SETUID
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp-volume
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"carts-db","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - image: mongo
+          name: carts-db
+          ports:
+            - containerPort: 27017
+              name: mongo
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - CHOWN
+                - SETGID
+                - SETUID
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"carts-db","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "27017"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "27017"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: tmp-volume
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: tmp-volume
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -153,12 +164,12 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 27017
-    targetPort: 27017
+    - port: 27017
+      targetPort: 27017
   selector:
     name: carts-db
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -169,6 +180,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: carts
+        version: v1
   template:
     metadata:
       annotations:
@@ -179,133 +194,134 @@ spec:
         version: v1
     spec:
       containers:
-      - env:
-        - name: ZIPKIN
-          value: zipkin.jaeger.svc.cluster.local
-        - name: JAVA_OPTS
-          value: -Xms64m -Xmx128m -XX:PermSize=32m -XX:MaxPermSize=64m -XX:+UseG1GC
-            -Djava.security.egd=file:/dev/urandom
-        image: weaveworksdemos/carts:0.4.8
-        name: carts
-        ports:
-        - containerPort: 80
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_BIND_SERVICE
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp-volume
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"carts","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - env:
+            - name: ZIPKIN
+              value: zipkin.jaeger.svc.cluster.local
+            - name: JAVA_OPTS
+              value:
+                -Xms64m -Xmx128m -XX:PermSize=32m -XX:MaxPermSize=64m -XX:+UseG1GC
+                -Djava.security.egd=file:/dev/urandom
+          image: weaveworksdemos/carts:0.4.8
+          name: carts
+          ports:
+            - containerPort: 80
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"carts","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "80"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "80"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: tmp-volume
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: tmp-volume
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -318,13 +334,13 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 80
-    name: http-carts
-    targetPort: 80
+    - port: 80
+      name: http-carts
+      targetPort: 80
   selector:
     name: carts
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -335,6 +351,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: catalogue-db
+        version: v1
   template:
     metadata:
       annotations:
@@ -345,118 +365,118 @@ spec:
         version: v1
     spec:
       containers:
-      - env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: fake_password
-        - name: MYSQL_DATABASE
-          value: socksdb
-        image: weaveworksdemos/catalogue-db:0.3.0
-        name: catalogue-db
-        ports:
-        - containerPort: 3306
-          name: tcp-dbport
-        resources: {}
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"catalogue-db","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: fake_password
+            - name: MYSQL_DATABASE
+              value: socksdb
+          image: weaveworksdemos/catalogue-db:0.3.0
+          name: catalogue-db
+          ports:
+            - containerPort: 3306
+              name: tcp-dbport
+          resources: {}
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"catalogue-db","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "3306"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "3306"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -469,15 +489,15 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 3306
-    targetPort: 3306
-    name: tcp-dbport
-    protocol: TCP
+    - port: 3306
+      targetPort: 3306
+      name: tcp-dbport
+      protocol: TCP
   selector:
     name: catalogue-db
   clusterIP: None
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -488,6 +508,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+     matchLabels: 
+        name: catalogue
+        version: v1
   template:
     metadata:
       annotations:
@@ -498,121 +522,121 @@ spec:
         version: v1
     spec:
       containers:
-      - image: weaveworksdemos/catalogue:0.3.5
-        name: catalogue
-        ports:
-        - containerPort: 80
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_BIND_SERVICE
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"catalogue","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - image: weaveworksdemos/catalogue:0.3.5
+          name: catalogue
+          ports:
+            - containerPort: 80
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"catalogue","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "80"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "80"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -625,13 +649,13 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 80
-    name: http-catalogue
-    targetPort: 80
+    - port: 80
+      name: http-catalogue
+      targetPort: 80
   selector:
     name: catalogue
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -640,6 +664,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: front-end
+        version: v1
   template:
     metadata:
       annotations:
@@ -650,122 +678,122 @@ spec:
         version: v1
     spec:
       containers:
-      - image: weaveworksdemos/front-end:0.3.12
-        name: front-end
-        ports:
-        - containerPort: 8079
-        resources:
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        securityContext:
-          capabilities:
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"front-end","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - image: weaveworksdemos/front-end:0.3.12
+          name: front-end
+          ports:
+            - containerPort: 8079
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            capabilities:
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"front-end","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "8079"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "8079"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -778,14 +806,14 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 80
-    targetPort: 8079
-    name: http-front-end
-    nodePort: 30001
+    - port: 80
+      targetPort: 8079
+      name: http-front-end
+      nodePort: 30001
   selector:
     name: front-end
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -796,6 +824,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: orders-db
+        version: v1
   template:
     metadata:
       annotations:
@@ -806,128 +838,128 @@ spec:
         version: v1
     spec:
       containers:
-      - image: mongo
-        name: orders-db
-        ports:
-        - containerPort: 27017
-          name: mongo
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - CHOWN
-            - SETGID
-            - SETUID
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp-volume
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"orders-db","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - image: mongo
+          name: orders-db
+          ports:
+            - containerPort: 27017
+              name: mongo
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - CHOWN
+                - SETGID
+                - SETUID
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"orders-db","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "27017"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "27017"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: tmp-volume
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: tmp-volume
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -940,12 +972,12 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 27017
-    targetPort: 27017
+    - port: 27017
+      targetPort: 27017
   selector:
     name: orders-db
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -956,6 +988,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: orders
+        version: v1
   template:
     metadata:
       annotations:
@@ -966,133 +1002,134 @@ spec:
         version: v1
     spec:
       containers:
-      - env:
-        - name: ZIPKIN
-          value: zipkin.jaeger.svc.cluster.local
-        - name: JAVA_OPTS
-          value: -Xms64m -Xmx128m -XX:PermSize=32m -XX:MaxPermSize=64m -XX:+UseG1GC
-            -Djava.security.egd=file:/dev/urandom
-        image: weaveworksdemos/orders:0.4.7
-        name: orders
-        ports:
-        - containerPort: 80
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_BIND_SERVICE
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
-        volumeMounts:
-        - mountPath: /tmp
+        - env:
+            - name: ZIPKIN
+              value: zipkin.jaeger.svc.cluster.local
+            - name: JAVA_OPTS
+              value:
+                -Xms64m -Xmx128m -XX:PermSize=32m -XX:MaxPermSize=64m -XX:+UseG1GC
+                -Djava.security.egd=file:/dev/urandom
+          image: weaveworksdemos/orders:0.4.7
+          name: orders
+          ports:
+            - containerPort: 80
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"orders","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
+      initContainers:
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "80"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      volumes:
+        - emptyDir:
+            medium: Memory
           name: tmp-volume
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"orders","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
+        - emptyDir:
+            medium: Memory
           name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
-      initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "80"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
-      nodeSelector:
-        beta.kubernetes.io/os: linux
-      volumes:
-      - emptyDir:
-          medium: Memory
-        name: tmp-volume
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -1105,13 +1142,13 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 80
-    name: http-orders
-    targetPort: 80
+    - port: 80
+      name: http-orders
+      targetPort: 80
   selector:
     name: orders
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -1122,6 +1159,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: payment
+        version: v1
   template:
     metadata:
       annotations:
@@ -1132,121 +1173,121 @@ spec:
         version: v1
     spec:
       containers:
-      - image: weaveworksdemos/payment:0.4.3
-        name: payment
-        ports:
-        - containerPort: 80
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_BIND_SERVICE
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"payment","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - image: weaveworksdemos/payment:0.4.3
+          name: payment
+          ports:
+            - containerPort: 80
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"payment","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "80"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "80"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -1259,13 +1300,13 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 80
-    name: http-payment
-    targetPort: 80
+    - port: 80
+      name: http-payment
+      targetPort: 80
   selector:
     name: payment
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -1276,6 +1317,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: queue-master
+        version: v1
   template:
     metadata:
       annotations:
@@ -1286,112 +1331,112 @@ spec:
         version: v1
     spec:
       containers:
-      - image: weaveworksdemos/queue-master:0.3.1
-        name: queue-master
-        ports:
-        - containerPort: 80
-        resources: {}
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"queue-master","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - image: weaveworksdemos/queue-master:0.3.1
+          name: queue-master
+          ports:
+            - containerPort: 80
+          resources: {}
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"queue-master","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "80"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "80"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -1406,13 +1451,13 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 80
-    name: http-queue-master
-    targetPort: 80
+    - port: 80
+      name: http-queue-master
+      targetPort: 80
   selector:
     name: queue-master
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -1423,6 +1468,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: rabbitmq
+        version: v1
   template:
     metadata:
       annotations:
@@ -1433,122 +1482,122 @@ spec:
         version: v1
     spec:
       containers:
-      - image: rabbitmq:3.6.8
-        name: rabbitmq
-        ports:
-        - containerPort: 5672
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - CHOWN
-            - SETGID
-            - SETUID
-            - DAC_OVERRIDE
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"rabbitmq","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - image: rabbitmq:3.6.8
+          name: rabbitmq
+          ports:
+            - containerPort: 5672
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - CHOWN
+                - SETGID
+                - SETUID
+                - DAC_OVERRIDE
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"rabbitmq","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "5672"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "5672"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -1561,15 +1610,15 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 5672
-    targetPort: 5672
-    name: "amq"
-  - port: 4369
-    name: "epmd"
+    - port: 5672
+      targetPort: 5672
+      name: "amq"
+    - port: 4369
+      name: "epmd"
   selector:
     name: rabbitmq
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -1580,6 +1629,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: shipping
+        version: v1
   template:
     metadata:
       annotations:
@@ -1590,133 +1643,134 @@ spec:
         version: v1
     spec:
       containers:
-      - env:
-        - name: ZIPKIN
-          value: zipkin.jaeger.svc.cluster.local
-        - name: JAVA_OPTS
-          value: -Xms64m -Xmx128m -XX:PermSize=32m -XX:MaxPermSize=64m -XX:+UseG1GC
-            -Djava.security.egd=file:/dev/urandom
-        image: weaveworksdemos/shipping:0.4.8
-        name: shipping
-        ports:
-        - containerPort: 80
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_BIND_SERVICE
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp-volume
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"shipping","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - env:
+            - name: ZIPKIN
+              value: zipkin.jaeger.svc.cluster.local
+            - name: JAVA_OPTS
+              value:
+                -Xms64m -Xmx128m -XX:PermSize=32m -XX:MaxPermSize=64m -XX:+UseG1GC
+                -Djava.security.egd=file:/dev/urandom
+          image: weaveworksdemos/shipping:0.4.8
+          name: shipping
+          ports:
+            - containerPort: 80
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"shipping","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "80"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "80"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: tmp-volume
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: tmp-volume
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -1729,13 +1783,13 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 80
-    name: http-shipping
-    targetPort: 80
+    - port: 80
+      name: http-shipping
+      targetPort: 80
   selector:
     name: shipping
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -1746,6 +1800,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: user-db
+        version: v1
   template:
     metadata:
       annotations:
@@ -1756,128 +1814,128 @@ spec:
         version: v1
     spec:
       containers:
-      - image: weaveworksdemos/user-db:0.4.0
-        name: user-db
-        ports:
-        - containerPort: 27017
-          name: mongo
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - CHOWN
-            - SETGID
-            - SETUID
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-        volumeMounts:
-        - mountPath: /tmp
+        - image: weaveworksdemos/user-db:0.4.0
+          name: user-db
+          ports:
+            - containerPort: 27017
+              name: mongo
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - CHOWN
+                - SETGID
+                - SETUID
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"user-db","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
+      initContainers:
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "27017"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      volumes:
+        - emptyDir:
+            medium: Memory
           name: tmp-volume
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"user-db","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
+        - emptyDir:
+            medium: Memory
           name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
-      initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "27017"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
-      nodeSelector:
-        beta.kubernetes.io/os: linux
-      volumes:
-      - emptyDir:
-          medium: Memory
-        name: tmp-volume
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -1890,12 +1948,12 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 27017
-    targetPort: 27017
+    - port: 27017
+      targetPort: 27017
   selector:
     name: user-db
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -1906,6 +1964,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+      matchLabels:
+        name: user
+        version: v1
   template:
     metadata:
       annotations:
@@ -1916,124 +1978,124 @@ spec:
         version: v1
     spec:
       containers:
-      - env:
-        - name: MONGO_HOST
-          value: user-db:27017
-        image: weaveworksdemos/user:0.4.7
-        name: user
-        ports:
-        - containerPort: 80
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_BIND_SERVICE
-            drop:
-            - all
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
-      - args:
-        - proxy
-        - sidecar
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system:15007
-        - --discoveryRefreshDelay
-        - 1s
-        - --zipkinAddress
-        - zipkin.istio-system:9411
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ISTIO_META_INTERCEPTION_MODE
-          value: REDIRECT
-        - name: ISTIO_METAJSON_LABELS
-          value: |
-            {"name":"user","version":"v1"}
-        image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-proxy
-        ports:
-        - containerPort: 15090
-          name: http-envoy-prom
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 10m
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
-        volumeMounts:
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/certs/
-          name: istio-certs
-          readOnly: true
+        - env:
+            - name: MONGO_HOST
+              value: user-db:27017
+          image: weaveworksdemos/user:0.4.7
+          name: user
+          ports:
+            - containerPort: 80
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+        - args:
+            - proxy
+            - sidecar
+            - --configPath
+            - /etc/istio/proxy
+            - --binaryPath
+            - /usr/local/bin/envoy
+            - --serviceCluster
+            - istio-proxy
+            - --drainDuration
+            - 45s
+            - --parentShutdownDuration
+            - 1m0s
+            - --discoveryAddress
+            - istio-pilot.istio-system:15007
+            - --discoveryRefreshDelay
+            - 1s
+            - --zipkinAddress
+            - zipkin.istio-system:9411
+            - --connectTimeout
+            - 10s
+            - --proxyAdminPort
+            - "15000"
+            - --controlPlaneAuthPolicy
+            - NONE
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ISTIO_META_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ISTIO_META_INTERCEPTION_MODE
+              value: REDIRECT
+            - name: ISTIO_METAJSON_LABELS
+              value: |
+                {"name":"user","version":"v1"}
+          image: gcr.io/istio-release/proxyv2:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-proxy
+          ports:
+            - containerPort: 15090
+              name: http-envoy-prom
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
+          volumeMounts:
+            - mountPath: /etc/istio/proxy
+              name: istio-envoy
+            - mountPath: /etc/certs/
+              name: istio-certs
+              readOnly: true
       initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - "80"
-        - -d
-        - ""
-        image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
+        - args:
+            - -p
+            - "15001"
+            - -u
+            - "1337"
+            - -m
+            - REDIRECT
+            - -i
+            - "*"
+            - -x
+            - ""
+            - -b
+            - "80"
+            - -d
+            - ""
+          image: gcr.io/istio-release/proxy_init:release-1.0-latest-daily
+          imagePullPolicy: IfNotPresent
+          name: istio-init
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-certs
-        secret:
-          optional: true
-          secretName: istio.default
+        - emptyDir:
+            medium: Memory
+          name: istio-envoy
+        - name: istio-certs
+          secret:
+            optional: true
+            secretName: istio.default
 status: {}
 ---
 apiVersion: v1
@@ -2046,9 +2108,10 @@ metadata:
 spec:
   ports:
     # the port that this service should serve on
-  - port: 80
-    name: http-user
-    targetPort: 80
+    - port: 80
+      name: http-user
+      targetPort: 80
   selector:
     name: user
 ---
+

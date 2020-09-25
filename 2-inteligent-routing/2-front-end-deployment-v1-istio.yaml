@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
@@ -7,6 +7,10 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+    matchLabels:
+        name: front-end
+        version: v1
   template:
     metadata:
       annotations:
@@ -124,7 +128,7 @@ spec:
             - NET_ADMIN
           privileged: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       volumes:
       - emptyDir:
           medium: Memory
